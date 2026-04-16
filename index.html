@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>航海时间管理</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-anchor"></i> 航海时间管理</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <button id="mute-btn" title="静音/取消静音">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button id="fullscreen-btn">去看风景</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Treasure Chest Sidebar/Button -->
+        <div id="treasure-chest-container">
+            <button id="chest-toggle-btn" title="查看我的宝藏 | Open Treasure Chest">
+                <i class="fas fa-box-open"></i>
+                <span class="btn-label" style="margin-left: 8px; font-size: 0.7rem;">Chest</span>
+                <span id="reward-notification" class="hidden">!</span>
+            </button>
+            <div id="chest-inventory" class="hidden">
+                <h3><i class="fas fa-gem"></i> 航海珍宝 <span style="font-size: 0.8rem; opacity: 0.7;">| My Treasures</span></h3>
+                <ul id="inventory-list">
+                    <!-- Rewards will appear here -->
+                </ul>
+                <p id="empty-inventory-msg">还没有获得宝藏，去航行吧！ <span style="font-size: 0.8rem; opacity: 0.7;">No treasures yet, set sail!</span></p>
+            </div>
+        </div>
+
+        <!-- Gallery Sidebar/Button -->
+        <div id="gallery-container">
+            <button id="gallery-toggle-btn" title="海景相册 | Open Gallery">
+                <i class="fas fa-images"></i>
+                <span class="btn-label" style="margin-left: 8px; font-size: 0.7rem;">Gallery</span>
+            </button>
+            <div id="gallery-viewer" class="hidden">
+                <h3><i class="fas fa-camera"></i> 海景相册 <span style="font-size: 0.8rem; opacity: 0.7;">| Sea Photos</span></h3>
+                <div id="gallery-image-wrapper">
+                    <img id="gallery-photo" src="" alt="海景照片" style="display: none;">
+                    <div id="gallery-loading" class="loading-indicator">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                </div>
+                <button id="next-photo-btn">
+                    <i class="fas fa-sync-alt"></i> 换一张 <span style="font-size: 0.8rem; opacity: 0.7;">| Next Photo</span>
+                </button>
+            </div>
+        </div>
+
+        <section id="todo-section" class="card">
+            <h2><i class="fas fa-list-ul"></i> 待办事项</h2>
+            <div class="input-group">
+                <input type="text" id="new-todo" placeholder="添加新的航海任务...">
+                <button id="add-todo-btn">添加</button>
+            </div>
+            <ul id="todo-list">
+                <!-- Todo items will be added here -->
+            </ul>
+        </section>
+
+        <section id="timer-section" class="card">
+            <h2><i class="fas fa-clock"></i> 计时器</h2>
+            <div class="timer-display">
+                <span id="timer-minutes">00</span>:<span id="timer-seconds">00</span>
+            </div>
+            <div class="timer-controls">
+                <button id="start-timer-btn"><i class="fas fa-play"></i> 开始</button>
+                <button id="pause-timer-btn"><i class="fas fa-pause"></i> 暂停</button>
+                <button id="reset-timer-btn"><i class="fas fa-redo"></i> 重置</button>
+            </div>
+            <div class="pomodoro-settings">
+                <label for="work-duration">工作时长 (分钟):</label>
+                <input type="number" id="work-duration" value="25" min="1">
+                <label for="break-duration">休息时长 (分钟):</label>
+                <input type="number" id="break-duration" value="5" min="1">
+            </div>
+        </section>
+
+        <section id="nautical-scene" class="card">
+            <h2><i class="fas fa-ship"></i> 航行日志</h2>
+            <div class="sea-container">
+                <div class="dock"></div>
+                <div class="boat">
+                    <div id="speech-bubble" class="hidden">今天干什么呢？</div>
+                </div>
+            </div>
+            <p id="boat-status">小船停靠在码头。</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 航海时间管理. 扬帆起航！</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</body>
+</html>

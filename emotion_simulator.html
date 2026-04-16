@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情绪模拟器 - 你的虚拟伙伴</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --primary-color: #4a90e2;
+            --text-color: #333;
+            --happy-color: #ffeb3b;
+            --sad-color: #64b5f6;
+            --angry-color: #ef5350;
+            --excited-color: #ff7043;
+            --sleepy-color: #9575cd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            color: #555;
+        }
+
+        .character-box {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 2rem;
+        }
+
+        #face-svg {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .mood-status {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        /* 动画效果 */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .anim-bounce { animation: bounce 0.5s ease infinite; }
+        .anim-shake { animation: shake 0.2s ease infinite; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 id="title">小派的心情</h1>
+    
+    <div class="character-box">
+        <svg id="face-svg" viewBox="0 0 100 100">
+            <!-- 脸部 -->
+            <circle id="face-circle" cx="50" cy="50" r="45" fill="#ffeb3b" stroke="#333" stroke-width="2" />
+            
+            <!-- 眼睛 -->
+            <g id="eyes">
+                <circle id="eye-l" cx="35" cy="40" r="4" fill="#333" />
+                <circle id="eye-r" cx="65" cy="40" r="4" fill="#333" />
+            </g>
+
+            <!-- 嘴巴 -->
+            <path id="mouth" d="M 35 65 Q 50 75 65 65" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" />
+        </svg>
+    </div>
+
+    <div id="mood-text" class="mood-status">它现在感觉：开心</div>
+
+    <div class="actions">
+        <button onclick="changeMood('happy')">送它礼物 🎁</button>
+        <button onclick="changeMood('sad')">说它坏话 😤</button>
+        <button onclick="changeMood('excited')">讲个笑话 😂</button>
+        <button onclick="changeMood('angry')">抢走零食 🍫</button>
+        <button onclick="changeMood('sleepy')">唱摇篮曲 🎵</button>
+        <button onclick="changeMood('reset')">重置心情 🔄</button>
+    </div>
+</div>
+
+<script>
+    const moods = {
+        happy: {
+            text: "开心",
+            color: "#ffeb3b",
+            bgColor: "#fff9c4",
+            mouth: "M 35 65 Q 50 75 65 65",
+            eyes: "circle",
+            animation: "anim-bounce"
+        },
+        sad: {
+            text: "难过",
+            color: "#64b5f6",
+            bgColor: "#e3f2fd",
+            mouth: "M 35 75 Q 50 65 65 75",
+            eyes: "circle",
+            animation: ""
+        },
+        angry: {
+            text: "愤怒",
+            color: "#ef5350",
+            bgColor: "#ffebee",
+            mouth: "M 35 70 L 65 70",
+            eyes: "angry",
+            animation: "anim-shake"
+        },
+        excited: {
+            text: "兴奋",
+            color: "#ff7043",
+            bgColor: "#fbe9e7",
+            mouth: "M 30 65 Q 50 85 70 65",
+            eyes: "excited",
+            animation: "anim-bounce"
+        },
+        sleepy: {
+            text: "想睡觉",
+            color: "#9575cd",
+            bgColor: "#ede7f6",
+            mouth: "M 40 70 Q 50 75 60 70",
+            eyes: "sleepy",
+            animation: ""
+        },
+        reset: {
+            text: "平静",
+            color: "#ffeb3b",
+            bgColor: "#f0f2f5",
+            mouth: "M 35 65 Q 50 75 65 65",
+            eyes: "circle",
+            animation: ""
+        }
+    };
+
+    function changeMood(moodKey) {
+        const mood = moods[moodKey];
+        const faceCircle = document.getElementById('face-circle');
+        const mouth = document.getElementById('mouth');
+        const moodText = document.getElementById('mood-text');
+        const faceSvg = document.getElementById('face-svg');
+        const eyesContainer = document.getElementById('eyes');
+
+        // 更新文本和背景
+        moodText.textContent = `它现在感觉：${mood.text}`;
+        document.body.style.backgroundColor = mood.bgColor;
+        moodText.style.backgroundColor = mood.color;
+
+        // 更新脸部颜色
+        faceCircle.setAttribute('fill', mood.color);
+
+        // 更新嘴巴形状
+        mouth.setAttribute('d', mood.mouth);
+
+        // 更新眼睛形状
+        updateEyes(mood.eyes);
+
+        // 更新动画
+        faceSvg.className = mood.animation;
+
+        // 添加一个小点击效果
+        faceSvg.style.transform = "scale(1.1)";
+        setTimeout(() => {
+            faceSvg.style.transform = "scale(1)";
+        }, 200);
+    }
+
+    function updateEyes(type) {
+        const eyesContainer = document.getElementById('eyes');
+        let eyesHtml = '';
+
+        if (type === 'circle') {
+            eyesHtml = `
+                <circle cx="35" cy="40" r="4" fill="#333" />
+                <circle cx="65" cy="40" r="4" fill="#333" />
+            `;
+        } else if (type === 'angry') {
+            eyesHtml = `
+                <path d="M 30 45 L 40 35" stroke="#333" stroke-width="3" stroke-linecap="round" />
+                <path d="M 60 35 L 70 45" stroke="#333" stroke-width="3" stroke-linecap="round" />
+            `;
+        } else if (type === 'excited') {
+            eyesHtml = `
+                <path d="M 30 40 Q 35 30 40 40" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" />
+                <path d="M 60 40 Q 65 30 70 40" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round" />
+            `;
+        } else if (type === 'sleepy') {
+            eyesHtml = `
+                <path d="M 30 40 L 40 40" stroke="#333" stroke-width="2" stroke-linecap="round" />
+                <path d="M 60 40 L 70 40" stroke="#333" stroke-width="2" stroke-linecap="round" />
+            `;
+        }
+
+        eyesContainer.innerHTML = eyesHtml;
+    }
+
+    // 初始化为开心
+    changeMood('reset');
+</script>
+
+</body>
+</html>
