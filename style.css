@@ -644,6 +644,81 @@ footer {
     image-rendering: pixelated;
 }
 
+/* Treasure Found Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+}
+
+.modal-content {
+    background-color: #d2b48c;
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 4px 4px;
+    border: 6px solid #5d4037;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.4);
+    max-width: 400px;
+    image-rendering: pixelated;
+}
+
+@keyframes legendary-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.4), 0 0 20px #ffd700, 0 0 40px #ffd700;
+        border-color: #ffd700;
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.4), 0 0 40px #ffd700, 0 0 80px #ffd700;
+        border-color: #ffd700;
+    }
+}
+
+.modal-content h3 {
+    color: #3d2b1f;
+    font-size: 1.8rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.modal-content p {
+    color: #4a3421;
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+
+.modal-content button {
+    background-color: #8b4513;
+    color: #f4e4bc;
+    border: 4px solid #5d4037;
+    padding: 12px 40px;
+    font-family: inherit;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s ease;
+}
+
+.modal-content button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content button:active {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
 /* Fullscreen Mode */
 body.fullscreen-active {
     background: #000;
@@ -912,14 +987,38 @@ body.fullscreen-active .boat {
     animation-play-state: running;
 }
 
+.boat.journeying.resume {
+    animation-play-state: running;
+}
+
 @keyframes boat-journey {
-    from {
+    0% {
         top: 55%; /* Starting point at horizon */
+        left: 50%;
         transform: translate(-50%, -50%) scale(0.1);
+        opacity: 1;
+    }
+    25% {
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.3);
+        opacity: 1;
+    }
+    50% {
+        top: 70%;
+        left: 48%;
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+    }
+    75% {
+        top: 85%;
+        left: 52%;
+        transform: translate(-50%, -50%) scale(1.5);
         opacity: 1;
     }
     100% {
         top: 95%; /* Moving down to the foreground */
+        left: 50%;
         transform: translate(-50%, -50%) scale(2.0); /* Zooming in significantly */
         opacity: 1;
     }

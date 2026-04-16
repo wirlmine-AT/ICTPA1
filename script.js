@@ -4,6 +4,7 @@ const addTodoBtn = document.getElementById('add-todo-btn');
 const todoList = document.getElementById('todo-list');
 const timerMinutesDisplay = document.getElementById('timer-minutes');
 const timerSecondsDisplay = document.getElementById('timer-seconds');
+const timerTypeDisplay = document.getElementById('timer-type');
 const startTimerBtn = document.getElementById('start-timer-btn');
 const pauseTimerBtn = document.getElementById('pause-timer-btn');
 const resetTimerBtn = document.getElementById('reset-timer-btn');
@@ -24,15 +25,24 @@ const galleryPhoto = document.getElementById('gallery-photo');
 const galleryLoading = document.getElementById('gallery-loading');
 const nextPhotoBtn = document.getElementById('next-photo-btn');
 const muteBtn = document.getElementById('mute-btn');
+const treasureModal = document.getElementById('treasure-modal');
+const treasureMessage = document.getElementById('treasure-message');
+const closeTreasureModal = document.getElementById('close-treasure-modal');
 
 let todos = JSON.parse(localStorage.getItem('todos')) || [];
 let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
 let voyageCount = parseInt(localStorage.getItem('voyageCount')) || 0;
 let timer; // To store setInterval ID
 let totalSeconds = 0;
+let initialTotalSeconds = 0; // Track the initial duration for animation progress
 let isRunning = false;
+let isBreakTime = false;
+let autoContinueEnabled = true;
 let activeTodoIndex = -1; // Track which todo is currently being timed
 let initialSailingEndHandler; // For transition cancellation
+let boatWasJourneying = false; // Track if boat was in journey mode before exiting fullscreen
+let animationProgress = 0; // Track how far the animation has progressed (0 to 1)
+let wasManuallyPausedFromFullscreen = false; // Track if paused by exiting fullscreen
 
 // --- Background Music ---
 const bgMusic = new Audio('陪您读书 - 937.He\'s a Pirate (加勒比海盗)(极简版钢琴曲) 伴奏 助眠解压.mp3');
@@ -102,13 +112,28 @@ function stopIdleSpeech() {
 }
 
 // --- Reward System Logic ---
-const possibleRewards = [
+const commonRewards = [
     { name: "金币", icon: "fas fa-coins", msg: "在海浪中发现了一袋沉甸甸的金币！" },
     { name: "藏宝图", icon: "fas fa-map-marked-alt", msg: "从小瓶子里翻出了一张神秘的藏宝图！" },
     { name: "红宝石", icon: "fas fa-gem", msg: "哇！这是一颗闪闪发光的深海红宝石。" },
     { name: "古老罗盘", icon: "fas fa-compass", msg: "捡到了一个刻满符文的古老罗盘。" },
-    { name: "珍珠", icon: "fas fa-dot-circle", msg: "在一枚巨大的贝壳里发现了纯净的珍珠。" }
+    { name: "珍珠", icon: "fas fa-dot-circle", msg: "在一枚巨大的贝壳里发现了纯净的珍珠。" },
+    { name: "银质酒杯", icon: "fas fa-glass-martini-alt", msg: "发现了一个精美的银质酒杯！" },
+    { name: "航海日志", icon: "fas fa-book", msg: "找到了一本破旧但珍贵的航海日志！" },
+    { name: "珊瑚项链", icon: "fas fa-necklace", msg: "一串美丽的珊瑚项链从海底浮现！" },
+    { name: "望远镜", icon: "fas fa-binoculars", msg: "发现了一个古董望远镜！" },
+    { name: "翡翠戒指", icon: "fas fa-ring", msg: "一枚闪耀的翡翠戒指！" }
 ];
+
+const rareRewards = [
+    { name: "黄金酒杯", icon: "fas fa-glass-cheers", msg: "稀有的黄金酒杯！价值连城！" },
+    { name: "钻石项链", icon: "fas fa-gem", msg: "一条璀璨夺目的钻石项链！" },
+    { name: "神秘水晶球", icon: "fas fa-globe", msg: "一个能预见未来的神秘水晶球！" },
+    { name: "海盗王的腰带", icon: "fas fa-tshirt", msg: "传说中海盗王的腰带！" }
+];
+
+const legendaryReward = { name: "黄金三叉戟", icon: "fas fa-trident", msg: "🏆 传说中的黄金三叉戟！海神波塞冬的神器！！！" };
+
 
 function checkReward() {
     voyageCount++;
@@ -118,7 +143,22 @@ function checkReward() {
     if (voyageCount >= 2) {
         // 40% chance of getting a reward
         if (Math.random() < 0.4) {
-            const reward = possibleRewards[Math.floor(Math.random() * possibleRewards.length)];
+            let reward;
+            const rand = Math.random();
+            
+            // 1% chance for legendary (黄金三叉戟)
+            if (rand < 0.01) {
+                reward = legendaryReward;
+            }
+            // 15% chance for rare rewards
+            else if (rand < 0.16) {
+                reward = rareRewards[Math.floor(Math.random() * rareRewards.length)];
+            }
+            // 84% chance for common rewards
+            else {
+                reward = commonRewards[Math.floor(Math.random() * commonRewards.length)];
+            }
+            
             addRewardToInventory(reward);
         }
     }
@@ -129,9 +169,25 @@ function addRewardToInventory(reward) {
     localStorage.setItem('inventory', JSON.stringify(inventory));
     renderInventory();
     
-    // Show notification
+    // Show notification on button
     rewardNotification.classList.remove('hidden');
-    alert(`【航海奖励】${reward.msg}`);
+    
+    // Show modal instead of alert
+    treasureMessage.textContent = reward.msg;
+    treasureModal.classList.remove('hidden');
+    
+    // Special effect for legendary reward (黄金三叉戟)
+    if (reward.name === "黄金三叉戟") {
+        const modalContent = treasureModal.querySelector('.modal-content');
+        modalContent.style.animation = 'legendary-pulse 0.5s ease-in-out 3';
+        
+        // Play a special sound effect if not muted
+        if (!isMuted) {
+            const legendarySound = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+            legendarySound.volume = 0.7;
+            legendarySound.play().catch(e => console.log("Legendary sound failed"));
+        }
+    }
 }
 
 function renderInventory() {
@@ -264,6 +320,31 @@ function updateTimerDisplay() {
     const seconds = totalSeconds % 60;
     timerMinutesDisplay.textContent = String(minutes).padStart(2, '0');
     timerSecondsDisplay.textContent = String(seconds).padStart(2, '0');
+    
+    // Update timer type display
+    if (isBreakTime) {
+        timerTypeDisplay.innerHTML = '<i class="fas fa-coffee"></i> 休息倒计时';
+        timerTypeDisplay.style.color = '#2e7d32';
+    } else {
+        timerTypeDisplay.innerHTML = '<i class="fas fa-anchor"></i> 航海倒计时';
+        timerTypeDisplay.style.color = '#8b4513';
+    }
+}
+
+function updateFullscreenButton() {
+    if (document.fullscreenElement) {
+        fullscreenBtn.textContent = '退出全屏';
+    } else {
+        fullscreenBtn.textContent = '去看风景';
+    }
+}
+
+function updateStartButton() {
+    if (wasManuallyPausedFromFullscreen) {
+        startTimerBtn.innerHTML = '<i class="fas fa-play"></i> 继续';
+    } else {
+        startTimerBtn.innerHTML = '<i class="fas fa-play"></i> 开始';
+    }
 }
 
 function startTimer() {
@@ -271,12 +352,27 @@ function startTimer() {
 
     stopIdleSpeech(); // Stop boat from talking when journey starts
 
-    const isResuming = totalSeconds > 0 && totalSeconds < parseInt(workDurationInput.value) * 60;
+    wasManuallyPausedFromFullscreen = false;
+    updateStartButton();
 
-    if (!isResuming) {
-        totalSeconds = parseInt(workDurationInput.value) * 60;
+    const isResuming = totalSeconds > 0 && totalSeconds < initialTotalSeconds;
+    const isWorkDuration = totalSeconds === parseInt(workDurationInput.value) * 60;
+    const isContinuingFromBreak = isBreakTime || (totalSeconds === parseInt(breakDurationInput.value) * 60);
+    const isFreshStart = (isWorkDuration && !isBreakTime) || (activeTodoIndex !== -1 && !isResuming);
+
+    if (isFreshStart || (!isResuming && !isContinuingFromBreak)) {
+        if (!isWorkDuration) {
+            totalSeconds = parseInt(workDurationInput.value) * 60;
+        }
+        initialTotalSeconds = totalSeconds;
+        animationProgress = 0;
+        isBreakTime = false;
+        boatWasJourneying = false;
         // Start from beginning: Departure
-        boat.classList.remove('departing', 'journeying');
+        boat.classList.remove('departing', 'journeying', 'resume');
+        boat.style.animation = '';
+        boat.style.animationDelay = '';
+        boat.style.display = ''; // Make sure boat is visible before departure
         void boat.offsetWidth; 
         boat.classList.add('departing');
         boatStatus.textContent = '准备起航，即将进入全屏专注模式...';
@@ -288,7 +384,36 @@ function startTimer() {
             enterFullScreen();
             boat.classList.remove('departing');
             boat.classList.add('journeying');
-            boat.style.animationDuration = totalSeconds + 's';
+            boat.style.animation = `boat-journey ${initialTotalSeconds}s linear forwards`;
+            boat.style.animationPlayState = 'running';
+            
+            boatStatus.textContent = activeTodoIndex !== -1 ? 
+                `正在全速航行以完成任务 "${todos[activeTodoIndex].text}"...` : 
+                '正在全速航行...';
+        };
+        boat.addEventListener('transitionend', initialSailingEndHandler);
+    } else if (isContinuingFromBreak && !isBreakTime) {
+        // Continuing work after break
+        initialTotalSeconds = parseInt(workDurationInput.value) * 60;
+        totalSeconds = initialTotalSeconds;
+        animationProgress = 0;
+        boatWasJourneying = false;
+        boat.classList.remove('departing', 'journeying', 'resume');
+        boat.style.animation = '';
+        boat.style.animationDelay = '';
+        boat.style.display = ''; // Make sure boat is visible before departure
+        void boat.offsetWidth; 
+        boat.classList.add('departing');
+        boatStatus.textContent = '休息结束，准备再次起航...';
+
+        initialSailingEndHandler = () => {
+            boat.removeEventListener('transitionend', initialSailingEndHandler);
+            if (!isRunning) return;
+            
+            enterFullScreen();
+            boat.classList.remove('departing');
+            boat.classList.add('journeying');
+            boat.style.animation = `boat-journey ${initialTotalSeconds}s linear forwards`;
             boat.style.animationPlayState = 'running';
             
             boatStatus.textContent = activeTodoIndex !== -1 ? 
@@ -297,11 +422,31 @@ function startTimer() {
         };
         boat.addEventListener('transitionend', initialSailingEndHandler);
     } else {
-        // Resuming
-        boat.style.animationPlayState = 'running';
-        boatStatus.textContent = '继续航行...';
+        // Resuming from pause
+        if (boatWasJourneying && !isBreakTime) {
+            // We were in journey mode before, go straight to fullscreen and continue animation
+            enterFullScreen();
+            boat.classList.remove('departing');
+            boat.classList.add('journeying', 'resume');
+            
+            const timeElapsed = initialTotalSeconds - totalSeconds;
+            const delay = -timeElapsed;
+            boat.style.animation = `boat-journey ${initialTotalSeconds}s linear forwards`;
+            boat.style.animationDelay = `${delay}s`;
+            boat.style.animationPlayState = 'running';
+            
+            boatStatus.textContent = activeTodoIndex !== -1 ? 
+                `正在全速航行以完成任务 "${todos[activeTodoIndex].text}"...` : 
+                '正在全速航行...';
+            boatWasJourneying = false;
+        } else if (isBreakTime) {
+            boatStatus.textContent = '休息中...';
+        } else {
+            boatStatus.textContent = '继续航行...';
+        }
     }
 
+    updateTimerDisplay();
     isRunning = true;
     timer = setInterval(() => {
         if (totalSeconds > 0) {
@@ -310,21 +455,85 @@ function startTimer() {
         } else {
             clearInterval(timer);
             isRunning = false;
-            alert('时间到！');
             
-            if (activeTodoIndex !== -1) {
-                todos[activeTodoIndex].completed = true;
-                saveTodos();
-                renderTodos();
-                activeTodoIndex = -1;
-            }
-
-            boat.classList.remove('departing', 'journeying');
-                boatStatus.textContent = '小船已抵达目的地。';
+            if (!isBreakTime) {
+                // --- 航海倒计时结束 ---
+                
+                // --- 1. 自动退出全屏 ---
                 exitFullScreen();
-                checkReward(); // New: Check for random rewards on completion
+                
+                // --- 2. 完成任务标记 ---
+                if (activeTodoIndex !== -1) {
+                    todos[activeTodoIndex].completed = true;
+                    saveTodos();
+                    renderTodos();
+                    activeTodoIndex = -1;
+                }
+                
+                // --- 3. 小船归港 ---
+                boat.classList.remove('departing', 'journeying', 'resume');
+                boat.style.animation = '';
+                boat.style.animationDelay = '';
+                boat.style.animationPlayState = '';
+                boat.style.display = '';
+                
+                // 显示圆满完成状态
+                boatStatus.textContent = '🎉 圆满完成！小船已抵达目的地。';
+                
+                // --- 4. 播放提醒音效 ---
+                if (!isMuted) {
+                    const completionSound = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+                    completionSound.volume = 0.5;
+                    completionSound.play().catch(e => console.log("Sound failed"));
+                }
+                
+                // --- 5. 检查宝藏 ---
+                checkReward();
+                
+                // --- 6. 恢复闲置语音 ---
                 startIdleSpeech();
-                new Audio('notification.mp3').play();
+                
+                // --- 7. 自动进入休息倒计时 ---
+                isBreakTime = true;
+                totalSeconds = parseInt(breakDurationInput.value) * 60;
+                initialTotalSeconds = totalSeconds;
+                // 小船在码头停靠
+                boatStatus.textContent = '休息中...准备再次起航！';
+                updateTimerDisplay();
+                startTimer();
+                
+            } else {
+                // --- 休息倒计时结束 ---
+                
+                // 不退出全屏，保持当前状态
+                // 不自动开始下一轮，完成闭环等待用户操作
+                
+                // 小船在码头停靠
+                boat.classList.remove('departing', 'journeying', 'resume');
+                boat.style.animation = '';
+                boat.style.animationDelay = '';
+                boat.style.animationPlayState = '';
+                boat.style.display = '';
+                boatStatus.textContent = '休息结束，等待您的下一次航行！';
+                
+                // 播放提醒音效
+                if (!isMuted) {
+                    const completionSound = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3');
+                    completionSound.volume = 0.5;
+                    completionSound.play().catch(e => console.log("Sound failed"));
+                }
+                
+                // 恢复闲置语音
+                startIdleSpeech();
+                
+                // 重置为航海倒计时状态，等待用户操作
+                isBreakTime = false;
+                totalSeconds = parseInt(workDurationInput.value) * 60;
+                initialTotalSeconds = totalSeconds;
+                wasManuallyPausedFromFullscreen = false;
+                updateTimerDisplay();
+                updateStartButton();
+            }
         }
     }, 1000);
 }
@@ -342,15 +551,23 @@ function pauseTimer() {
 function resetTimer() {
     clearInterval(timer);
     isRunning = false;
+    isBreakTime = false;
+    boatWasJourneying = false;
+    animationProgress = 0;
+    wasManuallyPausedFromFullscreen = false;
     activeTodoIndex = -1; // Reset active todo
     if (initialSailingEndHandler) {
         boat.removeEventListener('transitionend', initialSailingEndHandler);
     }
     totalSeconds = parseInt(workDurationInput.value) * 60;
+    initialTotalSeconds = totalSeconds;
     updateTimerDisplay();
-    boat.classList.remove('departing', 'journeying');
-    boat.style.animationDuration = '';
+    updateStartButton();
+    boat.classList.remove('departing', 'journeying', 'sliding-back', 'returning', 'resume');
+    boat.style.animation = '';
+    boat.style.animationDelay = '';
     boat.style.animationPlayState = '';
+    boat.style.display = ''; // Make sure boat is visible
     boatStatus.textContent = '小船停靠在码头。'; // Reset status text
     exitFullScreen(); // Ensure full screen is exited on reset
     startIdleSpeech(); // Start talking again on reset
@@ -365,7 +582,11 @@ workDurationInput.addEventListener('change', resetTimer);
 breakDurationInput.addEventListener('change', resetTimer);
 
 // Initialize timer display
-resetTimer();
+totalSeconds = parseInt(workDurationInput.value) * 60;
+initialTotalSeconds = totalSeconds;
+updateTimerDisplay();
+updateFullscreenButton();
+updateStartButton();
 renderInventory(); // Load saved rewards
 startIdleSpeech(); // Start talking initially
 
@@ -410,6 +631,8 @@ function exitFullScreen() {
 
 // Event listener for changes in fullscreen mode (remains for manual exit or browser exit)
 document.addEventListener('fullscreenchange', () => {
+    updateFullscreenButton();
+    
     if (!document.fullscreenElement) {
         document.body.classList.remove('fullscreen-active');
         stopAmbientSounds(); // Stop sounds if user exits via ESC
@@ -418,33 +641,29 @@ document.addEventListener('fullscreenchange', () => {
             bgMusic.play().catch(e => console.log("Playback failed"));
         }
         
+        // Save boat state before exiting
+        boatWasJourneying = boat.classList.contains('journeying');
+        
         // --- Pause Timer on Exit ---
         if (isRunning) {
+            wasManuallyPausedFromFullscreen = true;
             pauseTimer();
+            updateStartButton();
+            // Keep boat hidden and show it's temporarily away
+            boat.classList.remove('departing', 'journeying', 'resume');
+            boat.style.animation = '';
+            boat.style.animationDelay = '';
+            boat.style.animationPlayState = '';
+            boat.style.display = 'none'; // Hide the boat completely
+            // Show boat as temporarily away
+            boatStatus.textContent = '已暂停航行，小船暂时离开码头，航海中……';
         }
-        
-        // --- New: Return Animation Logic ---
-        // Clean up any journeying styles
-        boat.classList.remove('departing', 'journeying');
-        boat.style.animationDuration = '';
-        boat.style.animationPlayState = '';
-        
-        // Position boat at the left outside to start sliding back
-        boat.classList.add('returning');
-        void boat.offsetWidth; // Force reflow
-        
-        // Slide it back to the original dock position
-        boat.classList.remove('returning');
-        boat.classList.add('sliding-back');
-        
-        const returnEndHandler = () => {
-            boat.classList.remove('sliding-back');
-            boat.removeEventListener('transitionend', returnEndHandler);
-            boatStatus.textContent = isRunning ? '已暂停航行，小船暂时回港。' : '航程结束，小船已归港。';
-        };
-        boat.addEventListener('transitionend', returnEndHandler);
     } else {
         playAmbientSounds(); // Play sounds if user enters manually
+        // Show boat again when entering fullscreen if needed
+        if (boat.style.display === 'none') {
+            boat.style.display = '';
+        }
     }
 });
 
@@ -544,5 +763,16 @@ muteBtn.addEventListener('click', () => {
         }
         icon.classList.remove('fa-volume-mute');
         icon.classList.add('fa-volume-up');
+    }
+});
+
+// --- Modal Logic ---
+closeTreasureModal.addEventListener('click', () => {
+    treasureModal.classList.add('hidden');
+});
+
+treasureModal.addEventListener('click', (e) => {
+    if (e.target === treasureModal) {
+        treasureModal.classList.add('hidden');
     }
 });
